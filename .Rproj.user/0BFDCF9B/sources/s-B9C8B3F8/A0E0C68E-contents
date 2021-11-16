@@ -13,7 +13,7 @@ set.seed(1)
 ```
 
 ```{r}
-all_files=list.files(path = "long study")
+all_files=list.files()
 ```
 ```{r}
 reading_data= function(x){
