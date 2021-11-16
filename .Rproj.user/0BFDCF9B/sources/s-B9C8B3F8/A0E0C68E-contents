@@ -15,7 +15,7 @@ set.seed(1)
 
 #Loading the Excel Files and creating a function for reading them
 ```{r}
-all_files=list.files(path "long data")
+all_files=list.files(path= "long data")
 ```
 ```{r}
 reading_data= function(x){
@@ -23,6 +23,8 @@ reading_data= function(x){
   read
 }
 ```
+
+
 #Applying the function using map to create a data frame
 ```{r}
 subject_df= 
