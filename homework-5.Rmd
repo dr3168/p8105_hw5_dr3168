@@ -1,5 +1,5 @@
 ---
-title: "Homework 5"
+title: "p8105_hw5_dr3168"
 author: "Daniela Rochez"
 date: "11/15/2021"
 output: github_document
@@ -15,27 +15,36 @@ set.seed(1)
 
 #Loading the Excel Files and creating a function for reading them
 ```{r}
-all_files=list.files(path= "long data")
+all_files=
+           list.files(path= "./long data",
+                      recursive=T,
+                      pattern=".csv",
+                      full.names=T)
+
 ```
+
 ```{r}
 reading_data= function(x){
   read=read_csv(x)
-  read
-}
+  read}
 ```
-
 
 #Applying the function using map to create a data frame
 ```{r}
 subject_df= 
-  purrr::map_df(all_files,reading_data,.id = "subject_id")
+  purrr::map_dfr(all_files,reading_data)
 ```
 #Adding new variables for subjects
 ```{r}
 new_df=
   subject_df %>% 
+  mutate(arm= all_files) %>% 
   mutate(subject_id= all_files) %>% 
-  mutate(other_data= all_files) 
+  relocate(arm) %>% 
+  relocate(subject_id) %>% 
+  mutate(arm= as.factor(arm))
+view(new_df)
+names(new_df)
 ```
 
 #Tidying the data and separatinf variables
@@ -47,15 +56,11 @@ tidy_data=
     names_to = "week", 
     names_prefix = "week_",
     values_to = "observations") %>% 
-  separate(
-    subject_id, into = c("arm", "other"), 
-    sep = "_")%>% 
-  separate(
-    other_data, into = c("subject_id", "other"), 
-    sep = "\\.")%>%
-  relocate(subject_id) %>% 
-  select(-other) %>% 
-  mutate(week= as.numeric(week)) 
+  mutate(week=as.numeric(week)) %>% 
+  mutate(arm= str_sub(arm, 16,18)) %>% 
+  mutate(subject_id= str_sub(subject_id, 16,21)) %>% 
+  
+view(tidy_data)
 ```
 
 #Creating a spaghetti plot
