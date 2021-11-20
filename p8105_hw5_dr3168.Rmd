@@ -1,0 +1,146 @@
+---
+title: "p8105_hw5_dr3168"
+author: "Daniela Rochez"
+date: "11/15/2021"
+output: github_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(tidyverse)
+library(rvest)
+```
+
+Problem 1
+#Loading CSV file
+```{r}
+homicide_df= 
+  read_csv("homicide-data.csv", 
+           na= c("", "Unknown")) %>% 
+  mutate(city_state= str_c(city, state),
+         resolution= case_when(
+           disposition== 
+             "Closed without arrest" ~ "unsolved",
+           disposition== 
+             "Open/No arrest" ~ "unsolved",
+           disposition== 
+             "Closed by arrest" ~ "solved")) %>% 
+  relocate(city_state) %>% 
+  filter(city_state != "TulsaAL") %>% 
+  view()
+```
+#Focus on Baltimore
+```{r}
+baltimore_df= 
+  homicide_df %>% 
+  filter(city_state== "BaltimoreMD")
+
+baltimore_summary=
+  baltimore_df %>%
+  summarize(unsolved= 
+              sum(resolution== "unsolved"),
+            n=n())
+
+baltimore_test=
+  prop.test(
+  x= baltimore_summary %>% pull(unsolved),
+  n= baltimore_summary %>% pull(n)
+)
+
+baltimore_test %>% 
+  broom::tidy()
+```
+
+Problem 2
+
+#Loading the Excel Files and creating a function for reading them
+```{r}
+all_files=
+           list.files(path= "./long data",
+                      recursive=T,
+                      pattern=".csv",
+                      full.names=T)
+
+```
+
+```{r}
+reading_data= function(x){
+  read=read_csv(x)
+  read}
+```
+
+#Applying the function using map to create a data frame
+```{r}
+subject_df= 
+  purrr::map_dfr(all_files,reading_data)
+```
+#Adding new variables for subjects, relocating them to beggining of the data frame, and changing some variables to factors
+```{r}
+new_df=
+  subject_df %>% 
+  mutate(arm= all_files) %>% 
+  mutate(subject_id= all_files) %>% 
+  relocate(arm) %>% 
+  relocate(subject_id) %>% 
+  mutate(arm= as.factor(arm))
+```
+#Tidying the data and separatinf variables
+```{r}
+tidy_data=
+  pivot_longer(
+    new_df, 
+    week_1:week_8,
+    names_to = "week", 
+    names_prefix = "week_",
+    values_to = "observations") %>% 
+  mutate(week=as.numeric(week)) %>% 
+  mutate(subject_id=as.character(subject_id)) %>% 
+  mutate(arm= str_sub(arm, 13,15)) %>% 
+  mutate(subject_id= str_sub(subject_id, 13,18)) 
+  
+view(tidy_data)
+```
+
+#Creating a spaghetti plot
+```{r}
+tidy_data %>% 
+  ggplot(
+    aes(x = week,y = observations,
+        color=arm, group=subject_id))+
+  geom_line()
+```
+
+#It seems like the experimental has higher observations than the control arm.
+
+Problem 3
+```{r}
+library(tidyverse)
+library(purrr)
+
+set.seed(10)
+
+iris_with_missing = iris %>% 
+  map_df(~replace(.x, sample(1:150, 20), NA)) %>%
+  mutate(Species = as.character(Species))
+```
+
+#Writing the function
+```{r}
+filling_missing_data_1= function(x){
+  if (is.numeric(x)){x[is.na(x)]<-mean(x,na.rm = T)}
+  if (is.character(x)){x[is.na(x)]<-"virginica"}
+return(x)
+  }
+```
+#Using map function to get a data frame
+```{r}
+new_iris_df= map_dfr(iris_with_missing, filling_missing_data_1)
+```
+
+```{r}
+view(new_iris_df)
+```
+
+
+
