@@ -30,6 +30,8 @@ homicide_df=
   filter(city_state != "TulsaAL") %>% 
   view()
 ```
+#There are 52,169 observations. In the raw data there were some missing values however that was taken care of quickly. Key variables include city and state where the homicide took place and the age, sex and race of the victims.
+
 #Focus on Baltimore
 ```{r}
 baltimore_df= 
@@ -52,6 +54,48 @@ baltimore_test %>%
   broom::tidy()
 ```
 
+#Writing function
+```{r}
+prop_test_function= function (city_df){
+  city_summary=
+  city_df %>%
+  summarize(unsolved= 
+              sum(resolution== "unsolved"),
+            n=n())
+
+city_test=
+  prop.test(
+  x= city_summary %>% pull(unsolved),
+  n= city_summary %>% pull(n)
+)
+  return(city_test)
+}
+
+```
+#Iterating across cities
+```{r}
+results_df=
+  homicide_df %>% 
+  nest(data= uid:resolution) %>% 
+  mutate(test_results= 
+           map(data,prop_test_function),
+         tidy_results=
+           map(test_results,broom::tidy)) %>% 
+  select(city_state, tidy_results) %>% 
+  unnest(tidy_results) %>% 
+  select(city_state, estimate, starts_with("conf"))
+
+```
+#Making a plot showing estimates and CIs
+```{r}
+results_df %>%
+  mutate(city_state= fct_reorder(city_state, estimate)) %>% 
+  ggplot(aes(x=city_state, y=estimate)) +
+  geom_point() +
+  geom_errorbar(aes(ymin= conf.low, ymax= conf.high))+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
 Problem 2
 
 #Loading the Excel Files and creating a function for reading them
@@ -61,7 +105,6 @@ all_files=
                       recursive=T,
                       pattern=".csv",
                       full.names=T)
-
 ```
 
 ```{r}
@@ -133,12 +176,9 @@ filling_missing_data_1= function(x){
 return(x)
   }
 ```
-#Using map function to get a data frame
+#Using map function to get a data frame with no missinf values
 ```{r}
 new_iris_df= map_dfr(iris_with_missing, filling_missing_data_1)
-```
-
-```{r}
 view(new_iris_df)
 ```
 
